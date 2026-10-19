@@ -1,0 +1,179 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>MGNREGA Approved Works 2026-27 – Maharashtra</title>
+<style>
+  :root { --red:#b8372b; --ink:#222; --mute:#666; --line:#e2ddd6; --bg:#f6f4f0; --card:#fff; --swc:#1f7a5a; }
+  * { box-sizing:border-box; }
+  body { margin:0; font:14px/1.4 "Segoe UI", Roboto, Arial, sans-serif; background:var(--bg); color:var(--ink); }
+  header { padding:18px 24px 6px; }
+  h1 { margin:0; font-size:20px; }
+  header p { margin:2px 0 0; color:var(--mute); }
+  main { padding:12px 24px 32px; max-width:1500px; margin:auto; }
+  .cards { display:grid; grid-template-columns:repeat(auto-fit,minmax(200px,1fr)); gap:12px; margin-bottom:14px; }
+  .card { background:var(--card); border:1px solid var(--line); border-radius:6px; padding:12px 14px; }
+  .card b { display:block; font-size:22px; }
+  .card span { color:var(--mute); font-size:12px; }
+  .banner { background:var(--red); color:#fff; text-align:center; font-weight:600; padding:8px; border-radius:16px 16px 0 0; }
+  .panel { background:var(--card); border:1px solid var(--line); border-top:0; padding:14px; border-radius:0 0 6px 6px; }
+  .filters { display:flex; flex-wrap:wrap; gap:8px; }
+  .filters select, .filters input { padding:8px; border:1px solid #ccc; border-radius:6px; font:inherit; min-width:140px; background:#fff; }
+  .filters input { flex:1; min-width:200px; }
+  #cat { border:2px solid var(--swc); font-weight:600; }
+  #info { margin:10px 0 6px; color:var(--mute); font-size:13px; }
+  .wrap { overflow:auto; max-height:560px; border:1px solid var(--line); }
+  table { border-collapse:collapse; width:100%; min-width:1100px; }
+  th { position:sticky; top:0; background:var(--red); color:#fff; text-align:left; padding:8px; white-space:nowrap; cursor:pointer; }
+  td { padding:7px 8px; border-bottom:1px solid #eee; vertical-align:top; }
+  tr:nth-child(even) td { background:#faf8f5; }
+  td.n, th.n { text-align:right; white-space:nowrap; }
+  .tag { padding:2px 8px; border-radius:10px; font-size:12px; white-space:nowrap; }
+  .tag.swc { background:#d9f0e6; color:var(--swc); }
+  .tag.oth { background:#eee; color:#555; }
+  .pager { display:flex; gap:10px; align-items:center; margin-top:10px; }
+  .pager button { padding:6px 14px; border:1px solid #ccc; background:#fff; border-radius:6px; cursor:pointer; }
+  .pager button:disabled { opacity:.4; cursor:default; }
+</style>
+</head>
+<body>
+<header>
+  <h1>MGNREGA approved works 2026-27, Maharashtra</h1>
+  <p>Soil and water conservation (SWC) works versus other works</p>
+</header>
+<main>
+  <div class="cards">
+    <div class="card"><b id="c-works">0</b><span>Works in selection</span></div>
+    <div class="card"><b id="c-sanc">0</b><span>Sanctioned amount (₹ crore)</span></div>
+    <div class="card"><b id="c-paid">0</b><span>Paid this year (₹ crore)</span></div>
+  </div>
+
+  <div class="banner" id="banner">Works data table (filterable and searchable)</div>
+  <div class="panel">
+    <div class="filters">
+      <select id="cat" title="Work category">
+        <option value="">SWC and other works</option>
+        <option>SWC Work</option>
+        <option>Other Works</option>
+      </select>
+      <select id="mcat"></select>
+      <select id="wcat"></select>
+      <select id="district"></select>
+      <select id="block"></select>
+      <select id="gp"></select>
+      <select id="status"></select>
+      <select id="type"></select>
+      <input id="q" type="search" placeholder="Search work name or code…">
+    </div>
+    <div id="info"></div>
+    <div class="wrap">
+      <table>
+        <thead><tr id="head"></tr></thead>
+        <tbody id="body"></tbody>
+      </table>
+    </div>
+    <div class="pager">
+      <button id="prev">Previous</button>
+      <span id="page"></span>
+      <button id="next">Next</button>
+    </div>
+  </div>
+</main>
+
+<script>
+const COLS = [
+  ["District Name","District"], ["Block Name","Block"], ["Panchayat Name","Panchayat"],
+  ["Work Status","Status"], ["Work Code","Work code"], ["Work Name","Work name"],
+  ["Work Type","Work type"], ["Work Category (SWC)","Category"],
+  ["Sanction Amount (in Rs)","Sanction (₹)","n"],
+  ["Amount paid in current Fin Year (in Rs)_W","Paid this year (₹)","n"]
+];
+const FILTERS = { district:"District Name", block:"Block Name", gp:"Panchayat Name",
+                  status:"Work Status", type:"Work Type", cat:"Work Category (SWC)",
+                  mcat:"Master Work Category Name", wcat:"Work Category Name" };
+const LABEL = { district:"All districts", block:"All blocks", gp:"All panchayats",
+                status:"All statuses", type:"All work types",
+                mcat:"All master categories", wcat:"All work categories" };
+const PAGE = 50;
+let data = [], rows = [], page = 0, sortCol = null, sortDir = 1;
+const $ = id => document.getElementById(id);
+const inr = n => Number(n || 0).toLocaleString("en-IN");
+const crore = n => (n / 1e7).toLocaleString("en-IN", { maximumFractionDigits: 2 });
+const esc = s => String(s ?? "").replace(/[&<>"]/g, c => ({ "&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;" }[c]));
+
+fetch("data/works.json").then(r => r.json()).then(d => {
+  data = d;
+  $("head").innerHTML = '<th class="n">#</th>' + COLS.map((c, i) =>
+    `<th class="${c[2] || ""}" data-i="${i}">${c[1]}</th>`).join("");
+  document.querySelectorAll("th[data-i]").forEach(th => th.onclick = () => sortBy(+th.dataset.i));
+  ["district","block","gp","status","type","mcat","wcat"].forEach(k => $(k).onchange = () => { page = 0; update(k); });
+  $("cat").onchange = () => { page = 0; update(); };
+  $("q").oninput = () => { page = 0; update(); };
+  $("prev").onclick = () => { page--; draw(); };
+  $("next").onclick = () => { page++; draw(); };
+  update();
+}).catch(() => $("info").textContent = "Could not load data/works.json");
+
+// current selections
+const sel = () => Object.fromEntries(Object.keys(FILTERS).map(k => [k, $(k).value]));
+
+function match(r, s, skip) {
+  for (const k in FILTERS) if (k !== skip && s[k] && r[FILTERS[k]] !== s[k]) return false;
+  return true;
+}
+
+// rebuild dropdowns so each only lists values available under the other filters
+function fillSelects(s) {
+  ["district","block","gp","status","type","mcat","wcat"].forEach(k => {
+    const vals = [...new Set(data.filter(r => match(r, s, k)).map(r => r[FILTERS[k]]).filter(Boolean))].sort();
+    const el = $(k);
+    el.innerHTML = `<option value="">${LABEL[k]}</option>` + vals.map(v => `<option>${esc(v)}</option>`).join("");
+    el.value = vals.includes(s[k]) ? s[k] : "";
+  });
+}
+
+function update(changed) {
+  fillSelects(sel());
+  const s = sel(), q = $("q").value.trim().toLowerCase();
+  rows = data.filter(r => match(r, s) &&
+    (!q || String(r["Work Name"]).toLowerCase().includes(q) || String(r["Work Code"]).toLowerCase().includes(q)));
+  if (sortCol) applySort();
+  $("c-works").textContent = inr(rows.length);
+  $("c-sanc").textContent = crore(rows.reduce((a, r) => a + (+r["Sanction Amount (in Rs)"] || 0), 0));
+  $("c-paid").textContent = crore(rows.reduce((a, r) => a + (+r["Amount paid in current Fin Year (in Rs)_W"] || 0), 0));
+  $("banner").textContent = `Works data table: ${inr(rows.length)} of ${inr(data.length)} records (filterable and searchable)`;
+  draw();
+}
+
+function sortBy(i) {
+  const key = COLS[i][0];
+  sortDir = sortCol === key ? -sortDir : 1; sortCol = key;
+  applySort(); page = 0; draw();
+}
+function applySort() {
+  rows.sort((a, b) => {
+    const x = a[sortCol], y = b[sortCol];
+    return (typeof x === "number" && typeof y === "number" ? x - y : String(x ?? "").localeCompare(String(y ?? ""))) * sortDir;
+  });
+}
+
+function draw() {
+  const pages = Math.max(1, Math.ceil(rows.length / PAGE));
+  page = Math.min(Math.max(page, 0), pages - 1);
+  const start = page * PAGE, slice = rows.slice(start, start + PAGE);
+  $("info").textContent = rows.length
+    ? `Showing ${start + 1}–${start + slice.length} of ${inr(rows.length)} records`
+    : "No works match these filters. Clear a filter or the search box.";
+  $("body").innerHTML = slice.map((r, i) => `<tr><td class="n">${start + i + 1}</td>` + COLS.map(c => {
+    const v = r[c[0]];
+    if (c[0] === "Work Category (SWC)") return `<td><span class="tag ${v === "SWC Work" ? "swc" : "oth"}">${esc(v)}</span></td>`;
+    return c[2] === "n" ? `<td class="n">${inr(v)}</td>` : `<td>${esc(v)}</td>`;
+  }).join("") + "</tr>").join("");
+  $("page").textContent = `Page ${page + 1} of ${pages}`;
+  $("prev").disabled = page === 0;
+  $("next").disabled = page >= pages - 1;
+}
+</script>
+</body>
+</html>
