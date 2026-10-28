@@ -1,0 +1,226 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>MGNREGA SWC Works Dashboard, Maharashtra 2026-27</title>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.js"></script>
+<style>
+*{box-sizing:border-box;margin:0;padding:0;}
+body{font-family:Arial,sans-serif;background:#f4f4f4;padding:1rem;font-size:13px;color:#222;}
+.wrap{max-width:1200px;margin:0 auto;}
+.hdr{background:#c0392b;color:#fff;padding:.7rem 1rem;border-radius:8px;margin-bottom:.75rem;display:flex;justify-content:space-between;align-items:center;gap:10px;flex-wrap:wrap;}
+.hdr h1{font-size:16px;font-weight:700;}
+.hdr span{font-size:11px;opacity:.88;}
+.metrics{display:grid;grid-template-columns:repeat(6,1fr);gap:8px;margin-bottom:.75rem;}
+.met{background:#c0392b;border-radius:8px;padding:.6rem;text-align:center;color:#fff;}
+.met .v{font-size:20px;font-weight:700;}
+.met .l{font-size:10px;opacity:.88;margin-top:2px;line-height:1.3;}
+.stitle{background:#c0392b;color:#fff;text-align:center;padding:5px 8px;font-size:12px;font-weight:700;border-radius:6px;margin:.75rem 0 .5rem;}
+.g2{display:grid;grid-template-columns:1fr 1fr;gap:.75rem;margin-bottom:.75rem;}
+.card{background:#fff;border:1px solid #ddd;border-radius:8px;padding:.65rem;box-shadow:0 1px 3px rgba(0,0,0,.07);}
+.card h3{font-size:11px;font-weight:700;color:#c0392b;margin-bottom:6px;border-bottom:1px solid #eee;padding-bottom:3px;}
+.cw{overflow-x:auto;}
+.cin{position:relative;height:300px;min-width:100%;}
+.tbl-wrap{background:#fff;border:1px solid #ddd;border-radius:8px;padding:.75rem;box-shadow:0 1px 3px rgba(0,0,0,.07);margin-top:.5rem;}
+.tbl-filters{display:grid;grid-template-columns:repeat(auto-fit,minmax(130px,1fr));gap:6px;margin-bottom:8px;}
+.tbl-filters select,.tbl-filters input{width:100%;padding:5px 7px;font-size:11px;border:1px solid #ccc;border-radius:5px;background:#fff;}
+#fc{border:2px solid #1f7a5a;font-weight:700;}
+#warn{display:none;background:#fff3cd;border:1px solid #e0c36a;padding:6px 10px;border-radius:6px;margin-bottom:8px;font-size:12px;}
+.tbl-info{font-size:11px;color:#666;margin-bottom:5px;}
+.tbl-scroll{overflow:auto;max-height:420px;border:1px solid #eee;border-radius:4px;}
+table{width:100%;border-collapse:collapse;font-size:11px;}
+th{background:#c0392b;color:#fff;padding:6px 8px;text-align:left;position:sticky;top:0;white-space:nowrap;font-weight:700;}
+td{padding:4px 8px;border-bottom:1px solid #f0f0f0;white-space:nowrap;max-width:240px;overflow:hidden;text-overflow:ellipsis;}
+tr:nth-child(even){background:#fafafa;}
+tr:hover td{background:#fef0ed;}
+td.n,th.n{text-align:right;}
+.badge{display:inline-block;padding:1px 6px;border-radius:3px;font-size:10px;font-weight:700;}
+.b-g{background:#d4f5e2;color:#0a5a2a;}
+.b-n{background:#eee;color:#555;}
+.pg{display:flex;gap:6px;align-items:center;margin-top:8px;font-size:12px;}
+.pg button{padding:4px 10px;font-size:12px;border-radius:4px;border:1px solid #ccc;background:#fff;cursor:pointer;}
+.pg button:hover{background:#c0392b;color:#fff;border-color:#c0392b;}
+.pg button:disabled{opacity:.4;cursor:not-allowed;}
+.pg .r{margin-left:auto;color:#666;font-size:11px;}
+@media(max-width:700px){.metrics{grid-template-columns:repeat(2,1fr);}.g2{grid-template-columns:1fr;}}
+</style>
+</head>
+<body><div class="wrap">
+
+<div class="hdr">
+  <h1>MGNREGA Approved Works Dashboard: Soil and Water Conservation (FY 2026-27, Maharashtra)</h1>
+  <span id="rcnt">0 records shown</span>
+</div>
+
+<div class="metrics">
+  <div class="met"><div class="v" id="m-n">0</div><div class="l">Works in selection</div></div>
+  <div class="met"><div class="v" id="m-s">0</div><div class="l">SWC works</div></div>
+  <div class="met"><div class="v" id="m-p">0%</div><div class="l">SWC share of selection</div></div>
+  <div class="met"><div class="v" id="m-t">0</div><div class="l">Sanction total (₹ crore)</div></div>
+  <div class="met"><div class="v" id="m-w">0</div><div class="l">Sanction wage _W (₹ crore)</div></div>
+  <div class="met"><div class="v" id="m-m">0</div><div class="l">Sanction material _M (₹ crore)</div></div>
+</div>
+
+<div class="stitle" id="t1">1. Works by district &nbsp;|&nbsp; 2. SWC versus other works</div>
+<div class="g2">
+  <div class="card"><h3 id="h1">Number of works</h3><div class="cw"><div class="cin" id="w1"><canvas id="c1"></canvas></div></div></div>
+  <div class="card"><h3>SWC versus other works (follows district, block, panchayat and search)</h3><div class="cin"><canvas id="c2"></canvas></div></div>
+</div>
+
+<div class="stitle">3. Sanctioned amount: wage _W, material _M and total (₹ crore)</div>
+<div class="card"><h3 id="h3">Sanctioned amount</h3><div class="cw"><div class="cin" id="w3"><canvas id="c3"></canvas></div></div></div>
+
+<div class="stitle">4. Top 10 work types (current selection)</div>
+<div class="g2">
+  <div class="card"><h3>By number of works</h3><div class="cin"><canvas id="c4"></canvas></div></div>
+  <div class="card"><h3>By total sanction (₹ crore)</h3><div class="cin"><canvas id="c5"></canvas></div></div>
+</div>
+
+<div class="stitle">Works Data Table (Filterable + Searchable)</div>
+<div class="tbl-wrap">
+  <div id="warn"></div>
+  <div class="tbl-filters">
+    <select id="fc">
+      <option value="">All Categories</option>
+      <option value="SWC Work">SWC</option>
+      <option value="Other Works">Others</option>
+    </select>
+    <select id="fd"></select>
+    <select id="fb"></select>
+    <select id="fg"></select>
+    <input id="q" type="search" placeholder="Search work name or code…" style="grid-column:span 2;">
+  </div>
+  <div class="tbl-info" id="info"></div>
+  <div class="tbl-scroll"><table><thead><tr id="head"></tr></thead><tbody id="body"></tbody></table></div>
+  <div class="pg"><button id="prev">← Prev</button><span id="page"></span><button id="next">Next →</button><span class="r">50 rows per page</span></div>
+</div>
+</div>
+
+<script>
+const C = { d:"District Name", b:"Block Name", g:"Panchayat Name", code:"Work Code", name:"Work Name",
+            type:"Work Type", cat:"Work Category (SWC)", w:"Sanction Amount (in Rs)_W",
+            m:"Sanction Amount (in Rs)_M", t:"Sanction Amount (in Rs)" };
+const COLS = [[C.d,"District"],[C.b,"Block"],[C.g,"Panchayat"],[C.code,"Work code"],[C.name,"Work name"],
+  [C.type,"Work type"],[C.cat,"Category"],[C.w,"Sanction wage _W (₹)","n"],
+  [C.m,"Sanction material _M (₹)","n"],[C.t,"Sanction total (₹)","n"]];
+const PAGE = 50;
+let data = [], rows = [], page = 0, CH = {};
+const $ = id => document.getElementById(id);
+const num = v => +v || 0;
+const inr = n => Number(n || 0).toLocaleString("en-IN");
+const cr = n => (n / 1e7).toLocaleString("en-IN", { maximumFractionDigits: 2 });
+const tidy = s => String(s ?? "").replace(/\s+/g, " ").trim();
+const esc = s => String(s ?? "").replace(/[&<>"]/g, c => ({ "&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;" }[c]));
+
+fetch("data/works.json?v=" + Date.now()).then(r => r.json()).then(d => {
+  d.forEach(r => { [C.d, C.b, C.g].forEach(k => r[k] = tidy(r[k])); });
+  data = d;
+  const miss = Object.values(C).filter(c => !(c in (d[0] || {})));
+  if (miss.length) { $("warn").style.display = "block";
+    $("warn").textContent = "Columns missing in data/works.json: " + miss.join(", ") + ". Run prepare_data.py again and upload the new works.json."; }
+  $("head").innerHTML = "<th>#</th>" + COLS.map(c => `<th class="${c[2] || ""}">${c[1]}</th>`).join("");
+  ["fd","fb","fg","fc"].forEach(id => $(id).onchange = () => { page = 0; update(); });
+  $("q").oninput = () => { page = 0; update(); };
+  $("prev").onclick = () => { page--; draw(); };
+  $("next").onclick = () => { page++; draw(); };
+  update();
+}).catch(() => $("info").textContent = "Could not load data/works.json");
+
+const sel = () => ({ d:$("fd").value, b:$("fb").value, g:$("fg").value, c:$("fc").value });
+function match(r, s, skip) {
+  if (skip !== "d" && s.d && r[C.d] !== s.d) return false;
+  if (skip !== "b" && s.b && r[C.b] !== s.b) return false;
+  if (skip !== "g" && s.g && r[C.g] !== s.g) return false;
+  if (skip !== "c" && s.c && r[C.cat] !== s.c) return false;
+  return true;
+}
+const hit = (r, q) => !q || String(r[C.name]).toLowerCase().includes(q) || String(r[C.code]).toLowerCase().includes(q);
+
+function fill(s) {
+  [["fd","d",C.d,"All Districts"],["fb","b",C.b,"All Blocks"],["fg","g",C.g,"All Panchayats"]].forEach(([id,k,col,label]) => {
+    const vals = [...new Set(data.filter(r => match(r, s, k)).map(r => r[col]).filter(Boolean))].sort();
+    const el = $(id);
+    el.innerHTML = `<option value="">${label}</option>` + vals.map(v => `<option value="${esc(v)}">${esc(v)}</option>`).join("");
+    el.value = vals.includes(s[k]) ? s[k] : "";
+  });
+}
+
+function update() {
+  fill(sel());
+  const s = sel(), q = $("q").value.trim().toLowerCase();
+  rows = data.filter(r => match(r, s) && hit(r, q));
+  const sum = k => rows.reduce((a, r) => a + num(r[k]), 0);
+  const swc = rows.filter(r => r[C.cat] === "SWC Work").length;
+  $("m-n").textContent = inr(rows.length); $("m-s").textContent = inr(swc);
+  $("m-p").textContent = (rows.length ? swc / rows.length * 100 : 0).toFixed(1) + "%";
+  $("m-t").textContent = cr(sum(C.t)); $("m-w").textContent = cr(sum(C.w)); $("m-m").textContent = cr(sum(C.m));
+  $("rcnt").textContent = inr(rows.length) + " records shown (of " + inr(data.length) + ")";
+  draw();
+  charts(s, q);
+}
+
+function agg(list, key) {
+  const m = new Map();
+  list.forEach(r => {
+    const k = r[key] || "(blank)", o = m.get(k) || { n:0, w:0, m:0, t:0 };
+    o.n++; o.w += num(r[C.w]); o.m += num(r[C.m]); o.t += num(r[C.t]); m.set(k, o);
+  });
+  return [...m.entries()];
+}
+function mk(id, cfg) { if (CH[id]) CH[id].destroy(); CH[id] = new Chart($(id), cfg); }
+const short = n => function (v) { const l = this.getLabelForValue(v); return l.length > 34 ? l.slice(0, 33) + "…" : l; };
+
+function charts(s, q) {
+  if (typeof Chart === "undefined") return;
+  const key = s.b ? C.g : s.d ? C.b : C.d, lab = s.b ? "panchayat" : s.d ? "block" : "district";
+  const what = s.c === "SWC Work" ? "SWC works" : s.c === "Other Works" ? "other works" : "works";
+  const list = agg(rows, key).sort((a, b) => b[1].n - a[1].n), labels = list.map(x => x[0]);
+  const wd = Math.max(list.length * 46, 300) + "px";
+  $("w1").style.width = wd; $("w3").style.width = wd;
+  $("h1").textContent = `Number of ${what} by ${lab}`;
+  $("h3").textContent = `Sanctioned amount by ${lab} (₹ crore)`;
+  const xs = { x:{ ticks:{ maxRotation:60, minRotation:45, font:{ size:10 } } } };
+  const base = { responsive:true, maintainAspectRatio:false };
+
+  mk("c1", { type:"bar", data:{ labels, datasets:[{ label:"Works", data:list.map(x => x[1].n), backgroundColor:"#c0392b" }] },
+    options:{ ...base, scales:xs, plugins:{ legend:{ display:false } } } });
+
+  const q2 = data.filter(r => match(r, s, "c") && hit(r, q));
+  const ns = q2.filter(r => r[C.cat] === "SWC Work").length;
+  mk("c2", { type:"doughnut", data:{ labels:["SWC works","Other works"],
+    datasets:[{ data:[ns, q2.length - ns], backgroundColor:["#27ae60","#95a5a6"] }] },
+    options:{ ...base, plugins:{ legend:{ position:"bottom" } } } });
+
+  mk("c3", { type:"bar", data:{ labels, datasets:[
+    { label:"Wage (_W)", data:list.map(x => x[1].w / 1e7), backgroundColor:"#e67e22" },
+    { label:"Material (_M)", data:list.map(x => x[1].m / 1e7), backgroundColor:"#27ae60" },
+    { label:"Total", data:list.map(x => x[1].t / 1e7), backgroundColor:"#c0392b" } ] },
+    options:{ ...base, scales:xs, plugins:{ legend:{ position:"bottom" } } } });
+
+  const types = agg(rows, C.type);
+  const top = (arr, f) => arr.sort((a, b) => f(b[1]) - f(a[1])).slice(0, 10);
+  const hz = { ...base, indexAxis:"y", plugins:{ legend:{ display:false } },
+    scales:{ y:{ ticks:{ font:{ size:10 }, callback:short() } } } };
+  const t1 = top([...types], o => o.n), t2 = top([...types], o => o.t);
+  mk("c4", { type:"bar", data:{ labels:t1.map(x => x[0]), datasets:[{ data:t1.map(x => x[1].n), backgroundColor:"#c0392b" }] }, options:hz });
+  mk("c5", { type:"bar", data:{ labels:t2.map(x => x[0]), datasets:[{ data:t2.map(x => x[1].t / 1e7), backgroundColor:"#e67e22" }] }, options:hz });
+}
+
+function draw() {
+  const pages = Math.max(1, Math.ceil(rows.length / PAGE));
+  page = Math.min(Math.max(page, 0), pages - 1);
+  const start = page * PAGE, slice = rows.slice(start, start + PAGE);
+  $("info").textContent = rows.length ? `Showing ${start + 1}–${start + slice.length} of ${inr(rows.length)} records`
+    : "No works match these filters. Clear a filter or the search box.";
+  $("body").innerHTML = slice.map((r, i) => `<tr><td style="color:#999">${start + i + 1}</td>` + COLS.map(c => {
+    const v = r[c[0]];
+    if (c[0] === C.cat) return `<td><span class="badge ${v === "SWC Work" ? "b-g" : "b-n"}">${esc(v === "SWC Work" ? "SWC" : "Others")}</span></td>`;
+    return c[2] === "n" ? `<td class="n">${inr(v)}</td>` : `<td title="${esc(v)}">${esc(v)}</td>`;
+  }).join("") + "</tr>").join("");
+  $("page").textContent = `Page ${page + 1} of ${pages}`;
+  $("prev").disabled = page === 0; $("next").disabled = page >= pages - 1;
+}
+</script>
+</body>
+</html>
